@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Land · Water · Air</title>
+<style>
+  :root {
+    --ink: #101a18;
+    --paper: #edf1ee;
+    --land: #5c8a3f;
+    --water: #2389b5;
+    --air: #6f9dc4;
+    --gold: #c9932e;
+    --danger: #c14a35;
+
+    --bg: var(--paper);
+    --fg: var(--ink);
+    --card: #ffffff;
+    --card-2: #f4f6f3;
+    --line: rgba(16, 26, 24, 0.14);
+    --line-strong: rgba(16, 26, 24, 0.28);
+    --muted: rgba(16, 26, 24, 0.58);
+    --accent: var(--gold);
+    --shadow: 0 1px 0 rgba(16,26,24,0.05);
+
+    --land-fg: #33501f;
+    --water-fg: #0d4f66;
+    --air-fg: #2c4d6b;
+
+    --font-display: "Futura", "Century Gothic", "Avenir Next", "Segoe UI Semibold", Arial, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "SF Mono", "SFMono-Regular", "Roboto Mono", Menlo, Consolas, monospace;
+
+    /* responsive scale — widens the whole interface on larger screens
+       instead of leaving a mobile-width column floating in empty space */
+    --content-max: min(94vw, 460px);
+    --ring-size: min(40vw, 160px);
+    --emoji-size: min(11vw, 48px);
+    --prompt-size: min(9vw, 34px);
+    --brand-size: 30px;
+  }
+
+  @media (min-width: 700px) {
+    :root {
+      --content-max: 660px;
+      --ring-size: 210px;
+      --emoji-size: 54px;
+      --prompt-size: 40px;
+      --brand-size: 38px;
+    }
+  }
+  @media (min-width: 1100px) {
+    :root {
+      --content-max: 800px;
+      --ring-size: 260px;
+      --emoji-size: 64px;
+      --prompt-size: 48px;
+      --brand-size: 44px;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1513;
+      --fg: #eaf2ee;
+      --card: #131e1c;
+      --card-2: #182422;
+      --line: rgba(234, 242, 238, 0.14);
+      --line-strong: rgba(234, 242, 238, 0.26);
+      --muted: rgba(234, 242, 238, 0.6);
+      --land: #7fb85a;
+      --water: #4fc3e8;
+      --air: #a9c9e8;
+      --gold: #e0ab48;
+      --danger: #e57360;
+      --land-fg: #a7dd83;
+      --water-fg: #7fdcfb;
+      --air-fg: #c7e0f7;
+      --shadow: 0 1px 0 rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1513; --fg: #eaf2ee; --card: #131e1c; --card-2: #182422;
+    --line: rgba(234, 242, 238, 0.14); --line-strong: rgba(234, 242, 238, 0.26);
+    --muted: rgba(234, 242, 238, 0.6);
+    --land: #7fb85a; --water: #4fc3e8; --air: #a9c9e8; --gold: #e0ab48; --danger: #e57360;
+    --land-fg: #a7dd83; --water-fg: #7fdcfb; --air-fg: #c7e0f7;
+    --shadow: 0 1px 0 rgba(0,0,0,0.4);
+  }
+  :root[data-theme="light"] {
+    --bg: var(--paper); --fg: var(--ink); --card: #ffffff; --card-2: #f4f6f3;
+    --line: rgba(16, 26, 24, 0.14); --line-strong: rgba(16, 26, 24, 0.28);
+    --muted: rgba(16, 26, 24, 0.58);
+    --land: #5c8a3f; --water: #2389b5; --air: #6f9dc4; --gold: #c9932e; --danger: #c14a35;
+    --land-fg: #33501f; --water-fg: #0d4f66; --air-fg: #2c4d6b;
+    --shadow: 0 1px 0 rgba(16,26,24,0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 14px;
+  }
+  button { font-family: inherit; }
+
+  /* the start/game-over cards stay a comfortable fixed width on any screen
+     size — only the immersive game screen (#game-screen, capped separately
+     with --content-max) should grow on wide desktop viewports, since
+     stretching text cards and a single CTA button to 800px looks broken */
+  .app {
+    width: 100%;
+    max-width: min(94vw, 460px);
+  }
+
+  /* ---------- shared plate / panel style ---------- */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ================= START SCREEN ================= */
+  #start-screen { display: flex; flex-direction: column; gap: 18px; }
+
+  .brand { text-align: center; padding: 6px 0 2px; }
+  .brand .glyphs { font-size: 34px; letter-spacing: 6px; margin-bottom: 6px; }
+  .brand h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--brand-size);
+    letter-spacing: 0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .brand p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 34ch;
+    margin-inline: auto;
+  }
+
+  .rules {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .rule-cell { text-align: center; }
+  .rule-cell .ic { font-size: 22px; display: block; margin-bottom: 4px; }
+  .rule-cell .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .rule-cell .eg { font-family: var(--font-mono); font-size: 12px; margin-top: 2px; }
+  .rule-cell.land .eg { color: var(--land-fg); }
+  .rule-cell.water .eg { color: var(--water-fg); }
+  .rule-cell.air .eg { color: var(--air-fg); }
+
+  .mode-select { padding: 14px; }
+  .mode-select .eyebrow { margin-bottom: 8px; }
+  .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .seg-btn {
+    border: 1px solid var(--line);
+    background: var(--card-2);
+    color: var(--fg);
+    border-radius: 8px;
+    padding: 10px 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .15s ease, background .15s ease, transform .08s ease;
+  }
+  .seg-btn strong { display: block; font-size: 13px; }
+  .seg-btn span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .seg-btn:hover { border-color: var(--line-strong); }
+  .seg-btn:active { transform: scale(0.98); }
+  .seg-btn[aria-pressed="true"] {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, var(--card));
+  }
+
+  .high-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+  }
+  .high-row .v { font-size: 18px; font-variant-numeric: tabular-nums; color: var(--gold); }
+
+  .cta {
+    border: none;
+    border-radius: 10px;
+    padding: 15px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    background: var(--gold);
+    color: #1a1204;
+    cursor: pointer;
+    transition: transform .08s ease, filter .15s ease;
+  }
+  .cta:hover { filter: brightness(1.06); }
+  .cta:active { transform: scale(0.98); }
+
+  .foot-hint {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+  .sound-toggle {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: none; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--muted); font-size: 12px; padding: 7px 14px; cursor: pointer; margin: 0 auto;
+  }
+  .sound-toggle:hover { border-color: var(--line-strong); color: var(--fg); }
+
+  /* ================= GAME SCREEN (immersive, full-viewport) ================= */
+  #game-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: var(--bg);
+    padding: max(18px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+  #game-screen.active { display: flex; }
+  /* background stays full-bleed for the immersive feel; the actual play
+     controls are capped to --content-max so they don't stretch edge-to-edge
+     on wide desktop viewports */
+  #game-screen > * { width: 100%; max-width: var(--content-max); }
+
+  .play-hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  .play-stat { display: flex; align-items: center; gap: 6px; }
+  .play-stat .v { font-size: 20px; font-weight: 700; }
+  #play-score .v { color: var(--gold); }
+  #play-lives .v { font-size: 15px; letter-spacing: 2px; }
+  #play-streak { color: var(--danger); font-size: 15px; transition: opacity .15s ease; }
+  #play-streak .v { font-size: 15px; color: var(--danger); }
+
+  /* stage: full-bleed focal area with countdown ring + prompt */
+  .stage-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    overflow: hidden;
+  }
+
+  .flash-layer {
+    position: absolute; inset: 0; pointer-events: none;
+    opacity: 0; transition: opacity .18s ease;
+  }
+  .flash-layer.show-good { opacity: 1; background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--flash-good, var(--land)) 26%, transparent), transparent 70%); }
+  .flash-layer.show-bad { opacity: 1; background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--danger) 30%, transparent), transparent 70%); }
+
+  .bonus-tag {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; padding: 4px 14px;
+  }
+
+  .ring-box { position: relative; width: var(--ring-size); height: var(--ring-size); }
+  .ring-box svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--line); stroke-width: 6; }
+  .ring-fill { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; transition: stroke .25s ease; }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .ring-center .emoji { font-size: var(--emoji-size); line-height: 1; }
+
+  .popup-pts {
+    position: absolute;
+    top: -6px; left: 50%;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--gold);
+    transform: translate(-50%, 0);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .prompt-word {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--prompt-size);
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  /* ---------------- 3D character diorama ---------------- */
+  .scene {
+    position: relative;
+    width: min(100%, 320px);
+    height: 150px;
+    margin-top: 4px;
+    flex: none;
+    perspective: 480px;
+  }
+  .scene-clouds {
+    position: absolute; top: 2px; left: 50%;
+    font-size: 30px; line-height: 1; letter-spacing: 4px;
+    opacity: 0.85;
+    transform: translateX(-50%);
+    animation: clouds-drift 6s ease-in-out infinite;
+  }
+  @keyframes clouds-drift {
+    0%, 100% { transform: translateX(-50%) translateX(-4px); }
+    50% { transform: translateX(-50%) translateX(4px); }
+  }
+  /* ground is split in half: sea on the left, land on the right, with
+     land sitting 4px higher than the sea (a small step at the midpoint) */
+  /* a row of small scalloped wave crests tiled across the top of the sea */
+  .scene-sea {
+    position: absolute; left: 0; bottom: 0; width: 30%; height: 12px;
+    background-image:
+      repeating-radial-gradient(circle at 4px 0px,
+        transparent 0 2.5px,
+        color-mix(in srgb, white 60%, var(--water)) 2.5px 3.5px,
+        transparent 3.5px 8px),
+      linear-gradient(180deg,
+        color-mix(in srgb, var(--water) 55%, white) 0%,
+        var(--water) 45%,
+        color-mix(in srgb, var(--water) 78%, black) 100%);
+    background-size: 8px 6px, auto;
+    background-repeat: repeat-x, no-repeat;
+    background-position: top left, top left;
+    border-top: 2px solid color-mix(in srgb, white 55%, var(--water));
+  }
+  .scene-land {
+    position: absolute; right: 0; bottom: 0; width: 70%; height: 16px;
+    background-image:
+      repeating-linear-gradient(115deg,
+        color-mix(in srgb, var(--land) 65%, black) 0px,
+        color-mix(in srgb, var(--land) 65%, black) 1px,
+        transparent 1px,
+        transparent 5px),
+      linear-gradient(180deg,
+        color-mix(in srgb, var(--land) 55%, white) 0%,
+        var(--land) 45%,
+        color-mix(in srgb, var(--land) 72%, black) 100%);
+    border-top: 2px solid color-mix(in srgb, white 45%, var(--land));
+    border-left: 2px solid color-mix(in srgb, var(--land) 70%, black);
+    overflow: hidden;
+  }
+  /* small grass-blade ticks along the top edge of the land */
+  .scene-land::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background-image: repeating-linear-gradient(100deg,
+      color-mix(in srgb, var(--land) 55%, white) 0px,
+      color-mix(in srgb, var(--land) 55%, white) 1.5px,
+      transparent 1.5px,
+      transparent 5px);
+  }
+  /* mountain sits on the land half, the character climbs to the top of it */
+  .scene-mountain {
+    position: absolute; right: 14px; bottom: 16px;
+    width: 46px; height: 56px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--land) 55%, white) 0%,
+      var(--land) 45%,
+      color-mix(in srgb, var(--land) 72%, black) 100%);
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  }
+  .scene-mountain::after {
+    content: "";
+    position: absolute; top: 0; left: 50%;
+    width: 16px; height: 16px;
+    transform: translateX(-50%);
+    background: color-mix(in srgb, white 82%, var(--land));
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  }
+  /* a small bench the character rests on between rounds, centered under
+     the clouds now that land has been extended to include the middle */
+  .scene-bench {
+    position: absolute; left: 50%; bottom: 16px;
+    width: 30px; height: 9px;
+    margin-left: -15px;
+  }
+  .bench-seat {
+    position: absolute; left: 0; right: 0; bottom: 6px; height: 3px;
+    background: color-mix(in srgb, var(--fg) 60%, transparent);
+    border-radius: 1px;
+  }
+  .bench-leg {
+    position: absolute; bottom: 0; width: 2px; height: 6px;
+    background: color-mix(in srgb, var(--fg) 48%, transparent);
+  }
+  .bench-leg-l { left: 3px; }
+  .bench-leg-r { right: 3px; }
+
+  /* idle default is sitting on the bench, centered in the scene — every
+     action first "gets up" off the bench before it plays out */
+  .character {
+    position: absolute; left: 50%; bottom: 25px;
+    width: 26px; height: 40px;
+    margin-left: -13px;
+    transform-style: preserve-3d;
+    transform: translate3d(0, 0, 0);
+  }
+  .char-head {
+    position: absolute; top: 0; left: 5px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold);
+    box-shadow: inset -3px -3px 0 rgba(0,0,0,0.12);
+  }
+  .char-body {
+    position: absolute; top: 15px; left: 3px;
+    width: 20px; height: 20px; border-radius: 7px;
+    background: var(--fg);
+    opacity: 0.88;
+  }
+  .char-leg {
+    position: absolute; top: 33px;
+    width: 6px; height: 9px; border-radius: 2px;
+    background: var(--fg); opacity: 0.8;
+  }
+  .char-leg-l { left: 3px; }
+  .char-leg-r { left: 17px; }
+  .char-arm {
+    position: absolute; top: 16px;
+    width: 5px; height: 14px; border-radius: 2px;
+    background: var(--fg); opacity: 0.8;
+    transform-origin: top center;
+    transition: transform .2s ease;
+  }
+  .char-arm-l { left: -1px; }
+  .char-arm-r { left: 22px; }
+
+  /* jump/lie/climb arrive at their target and HOLD there (fill-mode: forwards)
+     until nextRound() clears the class for the next animal — only the
+     stumble (wrong answer) reaction is a self-resetting round-trip */
+  .character.jump .char-arm-l { transform: rotate(-150deg); }
+  .character.jump .char-arm-r { transform: rotate(150deg); }
+  .character.climb .char-arm-r { transform: rotate(55deg); }
+  .character.jump { animation: char-jump 0.5s ease forwards; }
+  .character.lie { animation: char-lie 0.5s ease forwards; }
+  .character.climb { animation: char-climb 0.5s ease forwards; }
+  .character.stumble { animation: char-stumble 0.5s ease; }
+
+  @keyframes char-jump {
+    0% { transform: translate3d(0, 0, 0) scaleY(1); }
+    12% { transform: translate3d(0, 9px, 0) scaleY(1); }
+    40% { transform: translate3d(0, 13px, 0) scaleY(0.88); }
+    75% { transform: translate3d(0, -63px, 0) scaleY(1.05) rotateX(-6deg); }
+    100% { transform: translate3d(0, -57px, 0) scaleY(1) rotateX(-4deg); }
+  }
+  /* water — jumps into the sea and settles slightly submerged, not lying flat */
+  @keyframes char-lie {
+    0% { transform: translate3d(0, 0, 0) rotateX(0); }
+    12% { transform: translate3d(-12px, 9px, 0) rotateX(0); }
+    38% { transform: translate3d(-59px, -7px, 0) rotateX(-4deg); }
+    70% { transform: translate3d(-110px, 24px, 4px) rotateX(18deg); }
+    100% { transform: translate3d(-110px, 22px, 4px) rotateX(12deg); }
+  }
+  /* runs across the land and touches the mountain — a bouncy stride
+     (alternating lean + hop) rather than a climb up to the peak */
+  @keyframes char-climb {
+    0%   { transform: translate3d(0, 0, 0) rotateZ(0deg); }
+    10%  { transform: translate3d(8px, 9px, 0) rotateZ(0deg); }
+    25%  { transform: translate3d(26px, 6px, 0) rotateZ(-6deg); }
+    40%  { transform: translate3d(47px, 9px, 0) rotateZ(6deg); }
+    55%  { transform: translate3d(66px, 6px, 0) rotateZ(-6deg); }
+    70%  { transform: translate3d(79px, 9px, 0) rotateZ(4deg); }
+    90%  { transform: translate3d(84px, 9px, 0) rotateZ(0deg); }
+    100% { transform: translate3d(84px, 9px, 0) rotateZ(0deg); }
+  }
+  @keyframes char-stumble {
+    0% { transform: translate3d(0, 0, 0) rotate(0); }
+    22% { transform: translate3d(-5px, 2px, 0) rotate(-9deg); }
+    44% { transform: translate3d(5px, 2px, 0) rotate(8deg); }
+    66% { transform: translate3d(-3px, 0, 0) rotate(-4deg); }
+    100% { transform: translate3d(0, 0, 0) rotate(0); }
+  }
+
+  .stage-wrap.shake { animation: shake .3s ease; }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+  }
+
+  .popup-pts.fly { animation: fly-up .7s ease-out forwards; }
+  @keyframes fly-up {
+    0% { opacity: 0; transform: translate(-50%, 6px); }
+    18% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -26px); }
+  }
+
+  /* answer buttons */
+  .answers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    flex: none;
+  }
+  .ans-btn {
+    position: relative;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    border-radius: 14px;
+    padding: 18px 8px 16px;
+    min-height: 22vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--fg);
+    transition: transform .08s ease, border-color .15s ease, background .15s ease;
+  }
+  .ans-btn .ic { font-size: min(13vw, 48px); line-height: 1; }
+  .ans-btn .lbl { font-size: 16px; font-weight: 700; text-align: center; line-height: 1.15; }
+  .ans-btn .key {
+    position: absolute; top: 8px; left: 10px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+  }
+  .ans-btn:hover { border-color: var(--line-strong); }
+  .ans-btn:active { transform: scale(0.96); }
+  .ans-btn.land-tone .ic { color: var(--land-fg); }
+  .ans-btn.water-tone .ic { color: var(--water-fg); }
+  .ans-btn.air-tone .ic { color: var(--air-fg); }
+  .ans-btn.correct { border-color: var(--land); background: color-mix(in srgb, var(--land) 20%, var(--card)); }
+  .ans-btn.wrong { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 20%, var(--card)); }
+  .ans-btn.selected { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 16%, var(--card)); }
+  .ans-btn:disabled { cursor: default; }
+  .ans-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* ================= GAME OVER ================= */
+  #over-screen { display: none; flex-direction: column; gap: 16px; text-align: center; padding: 8px; }
+  #over-screen .glyphs { font-size: 30px; letter-spacing: 6px; }
+  #over-screen h2 { font-family: var(--font-display); font-size: 26px; margin: 4px 0 0; }
+  .final-score { font-family: var(--font-mono); font-size: 44px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; margin: 4px 0; }
+  .new-high { display: inline-block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--land-fg); border: 1px solid var(--land); border-radius: 999px; padding: 4px 12px; }
+  .over-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+  }
+  .over-stats b { color: var(--fg); display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+
+  .hidden { display: none !important; }
+  #game-screen.active, #start-screen.active, #over-screen.active { display: flex; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-wrap.shake { animation: none; }
+    .popup-pts.fly { animation: none; opacity: 1; }
+    .character.jump, .character.lie, .character.climb, .character.stumble { animation: none; }
+    .scene-clouds { animation: none; }
+    * { transition-duration: 0.01ms !important; }
+  }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== START SCREEN ========== -->
+  <section id="start-screen" class="active">
+    <div class="brand">
+      <div class="glyphs">🌍 🌊 ☁️</div>
+      <h1>Land · Water · Air</h1>
+      <p>Sort each animal to its home before the ring runs out. Speed and streaks earn more points.</p>
+    </div>
+
+    <div class="panel rules">
+      <div class="rule-cell land">
+        <span class="ic">🌍</span>
+        <span class="lbl">Land</span>
+        <span class="eg">Lion, Tiger</span>
+      </div>
+      <div class="rule-cell water">
+        <span class="ic">🌊</span>
+        <span class="lbl">Water</span>
+        <span class="eg">Shark, Fish</span>
+      </div>
+      <div class="rule-cell air">
+        <span class="ic">☁️</span>
+        <span class="lbl">Air</span>
+        <span class="eg">Eagle, Bee</span>
+      </div>
+    </div>
+
+    <div class="panel mode-select">
+      <div class="eyebrow">Choose mode</div>
+      <div class="seg">
+        <button class="seg-btn" id="mode-classic" aria-pressed="true">
+          <strong>Classic</strong>
+          <span>See "Water" → pick the fish</span>
+        </button>
+        <button class="seg-btn" id="mode-advanced" aria-pressed="false">
+          <strong>Advanced</strong>
+          <span>See the fish → pick Water</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel high-row">
+      <span class="eyebrow">Best · <span id="mode-label-start">Classic</span></span>
+      <span class="v" id="high-score-start">0</span>
+    </div>
+
+    <button class="cta" id="start-btn">Start Game</button>
+    <button class="sound-toggle" id="sound-toggle-start">🔊 Sound on</button>
+    <div class="foot-hint">Tap an answer, or use keys 1 · 2 · 3</div>
+  </section>
+
+  <!-- ========== GAME SCREEN (immersive) ========== -->
+  <section id="game-screen">
+    <div class="play-hud">
+      <div class="play-stat" id="play-score"><span class="v">0</span></div>
+      <div class="play-stat hidden" id="play-streak">🔥<span class="v">0</span></div>
+      <div class="play-stat" id="play-lives"><span class="v">❤❤❤</span></div>
+    </div>
+
+    <div class="stage-wrap" id="stage-wrap">
+      <div class="flash-layer" id="flash-layer"></div>
+      <div class="bonus-tag hidden" id="bonus-tag">★ all habitats</div>
+      <div class="ring-box">
+        <div class="popup-pts" id="popup-pts">+100</div>
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+          <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="emoji" id="prompt-emoji">🦁</div>
+        </div>
+      </div>
+      <div class="prompt-word" id="prompt-word">LION</div>
+
+      <div class="scene">
+        <div class="scene-clouds">☁️ ☁️</div>
+        <div class="scene-sea"></div>
+        <div class="scene-land"></div>
+        <div class="scene-mountain"></div>
+        <div class="scene-bench">
+          <div class="bench-seat"></div>
+          <div class="bench-leg bench-leg-l"></div>
+          <div class="bench-leg bench-leg-r"></div>
+        </div>
+        <div class="character" id="character">
+          <div class="char-arm char-arm-l"></div>
+          <div class="char-arm char-arm-r"></div>
+          <div class="char-head"></div>
+          <div class="char-body"></div>
+          <div class="char-leg char-leg-l"></div>
+          <div class="char-leg char-leg-r"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="answers" id="answers"></div>
+  </section>
+
+  <!-- ========== GAME OVER SCREEN ========== -->
+  <section id="over-screen">
+    <div class="glyphs">🌍 🌊 ☁️</div>
+    <h2>Round Over</h2>
+    <div class="final-score" id="final-score">0</div>
+    <div id="new-high-badge" class="new-high hidden">New high score</div>
+    <div class="over-stats">
+      <div><b id="stat-accuracy">0%</b>accuracy</div>
+      <div><b id="stat-fastest">–</b>fastest answer</div>
+      <div><b id="stat-best-streak">0</b>best streak</div>
+      <div><b id="stat-best">0</b>best score</div>
+    </div>
+    <button class="cta" id="restart-btn">Play Again</button>
+    <button class="sound-toggle" id="sound-toggle-over">🔊 Sound on</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- data ---------------- */
+  /* difficulty tiers gate which animals can appear (see unlockedTiers()) */
+  var ANIMALS = [
+    { name: "Lion", emoji: "🦁", h: ["land"], difficulty: "easy", fact: "Lions are the only cats that live in big family groups." },
+    { name: "Tiger", emoji: "🐯", h: ["land"], difficulty: "easy", fact: "A tiger's stripes are like fingerprints — no two are the same." },
+    { name: "Elephant", emoji: "🐘", h: ["land"], difficulty: "easy", fact: "Elephants can sense sounds through their feet." },
+    { name: "Horse", emoji: "🐴", h: ["land"], difficulty: "easy", fact: "Horses can sleep standing up." },
+    { name: "Rabbit", emoji: "🐰", h: ["land"], difficulty: "easy", fact: "A rabbit's teeth never stop growing." },
+    { name: "Fox", emoji: "🦊", h: ["land"], difficulty: "medium", fact: "Foxes wrap their bushy tail around themselves like a blanket." },
+    { name: "Bear", emoji: "🐻", h: ["land"], difficulty: "medium", fact: "Bears can smell food from miles away." },
+    { name: "Wolf", emoji: "🐺", h: ["land"], difficulty: "medium", fact: "Wolves howl to talk to the rest of their pack." },
+    { name: "Fish", emoji: "🐟", h: ["water"], difficulty: "easy", fact: "Some fish can recognize human faces." },
+    { name: "Shark", emoji: "🦈", h: ["water"], difficulty: "easy", fact: "Sharks have been around longer than trees." },
+    { name: "Whale", emoji: "🐳", h: ["water"], difficulty: "easy", fact: "A blue whale's heart is about the size of a small car." },
+    { name: "Dolphin", emoji: "🐬", h: ["water"], difficulty: "easy", fact: "Dolphins call to each other using name-like whistles." },
+    { name: "Octopus", emoji: "🐙", h: ["water"], difficulty: "medium", fact: "An octopus has three hearts." },
+    { name: "Crab", emoji: "🦀", h: ["water"], difficulty: "medium", fact: "Crabs walk sideways because of how their legs bend." },
+    { name: "Seal", emoji: "🦭", h: ["water"], difficulty: "medium", fact: "Seals can sleep underwater, coming up to breathe without waking." },
+    { name: "Lobster", emoji: "🦞", h: ["water"], difficulty: "medium", fact: "Lobsters taste using tiny sensors on their legs." },
+    { name: "Eagle", emoji: "🦅", h: ["air"], difficulty: "easy", fact: "An eagle can spot a rabbit from nearly two miles away." },
+    { name: "Sparrow", emoji: "🐦", h: ["air"], difficulty: "easy", fact: "Sparrows take dust baths to keep their feathers clean." },
+    { name: "Butterfly", emoji: "🦋", h: ["air"], difficulty: "easy", fact: "Butterflies taste with their feet." },
+    { name: "Owl", emoji: "🦉", h: ["air"], difficulty: "medium", fact: "Owls can turn their heads almost all the way around." },
+    { name: "Parrot", emoji: "🦜", h: ["air"], difficulty: "medium", fact: "Some parrots live for more than 80 years." },
+    { name: "Bat", emoji: "🦇", h: ["air"], difficulty: "medium", fact: "Bats are the only mammals that can truly fly." },
+    { name: "Bee", emoji: "🐝", h: ["air"], difficulty: "medium", fact: "A bee visits 50 to 100 flowers on a single trip." }
+  ];
+  var BONUS_ANIMALS = [
+    { name: "Frog", emoji: "🐸", h: ["land", "water"], difficulty: "hard", fact: "Frogs breathe through their skin as well as their lungs." },
+    { name: "Turtle", emoji: "🐢", h: ["land", "water"], difficulty: "hard", fact: "A turtle's shell has nerve endings, so it can feel a gentle touch." },
+    { name: "Penguin", emoji: "🐧", h: ["land", "water"], difficulty: "hard", fact: "Penguins spend most of their hunting time in water, not on land." },
+    { name: "Swan", emoji: "🦢", h: ["water", "air"], difficulty: "hard", fact: "Swans usually mate with the same partner for life." },
+    { name: "Duck", emoji: "🦆", h: ["land", "water", "air"], difficulty: "expert", fact: "A duck's feathers stay dry even after it dives underwater." }
+  ];
+  var HABITAT_INFO = {
+    land: { label: "Land", emoji: "🌍", tone: "land-tone" },
+    water: { label: "Water", emoji: "🌊", tone: "water-tone" },
+    air: { label: "Air", emoji: "☁️", tone: "air-tone" }
+  };
+  var HABITAT_KEYS = ["land", "water", "air"];
+
+  /* ---------------- state ---------------- */
+  var state = {
+    mode: "classic",
+    score: 0,
+    combo: 0,
+    bestCombo: 0,
+    lives: 3,
+    roundsWon: 0,
+    muted: false,
+    roundActive: false,
+    roundEndAt: 0,
+    roundDuration: 2500,
+    requiredSet: null,
+    selectedSet: null,
+    rafId: null,
+    tickPlayedAt: -1,
+    totalRounds: 0,
+    correctCount: 0,
+    fastestMs: Infinity
+  };
+
+  function hsKey(mode) { return "lwa_highscore_" + mode; }
+  function getHigh(mode) { return parseInt(localStorage.getItem(hsKey(mode)) || "0", 10); }
+  function setHigh(mode, v) { localStorage.setItem(hsKey(mode), String(v)); }
+
+  state.muted = localStorage.getItem("lwa_muted") === "1";
+
+  /* ---------------- audio ---------------- */
+  var actx = null;
+  function ensureAudio() {
+    if (!actx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      actx = new AC();
+    }
+    if (actx.state === "suspended") actx.resume();
+  }
+  function tone(freq, dur, type, delay, gain) {
+    if (state.muted || !actx) return;
+    var t0 = actx.currentTime + (delay || 0);
+    var osc = actx.createOscillator();
+    var g = actx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gain || 0.16, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(g);
+    g.connect(actx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+  function playCorrect() { tone(660, 0.09, "sine", 0, 0.16); tone(920, 0.13, "sine", 0.07, 0.16); }
+  function playWrong() { tone(220, 0.22, "sawtooth", 0, 0.12); tone(140, 0.24, "sawtooth", 0.05, 0.1); }
+  function playTick() { tone(1200, 0.03, "square", 0, 0.045); }
+  function playLifeLost() { tone(120, 0.28, "triangle", 0, 0.18); }
+  function playSelect() { tone(500, 0.05, "sine", 0, 0.08); }
+  function playGameOver() {
+    [440, 370, 310, 220].forEach(function (f, i) { tone(f, 0.22, "sine", i * 0.14, 0.14); });
+  }
+  function playStart() { tone(500, 0.08, "sine", 0, 0.12); tone(760, 0.12, "sine", 0.09, 0.12); }
+
+  /* ---------------- dom ---------------- */
+  var $ = function (id) { return document.getElementById(id); };
+  var startScreen = $("start-screen"), gameScreen = $("game-screen"), overScreen = $("over-screen");
+  var stageWrap = $("stage-wrap"), flashLayer = $("flash-layer"), popupPts = $("popup-pts");
+  var ringFill = $("ring-fill"), ringCircumference = 2 * Math.PI * 52;
+  ringFill.style.strokeDasharray = String(ringCircumference);
+  var characterEl = $("character");
+  var CHAR_ACTION = { land: "climb", water: "lie", air: "jump" };
+  function playCharacterAction(habitat, success) {
+    var cls = success ? CHAR_ACTION[habitat] : "stumble";
+    if (!cls) return;
+    characterEl.classList.remove("jump", "lie", "climb", "stumble");
+    void characterEl.offsetWidth;
+    characterEl.classList.add(cls);
+  }
+
+  function showScreen(el) {
+    [startScreen, gameScreen, overScreen].forEach(function (s) { s.classList.remove("active"); });
+    el.classList.add("active");
+  }
+
+  function refreshHighDisplays() {
+    var h = getHigh(state.mode);
+    $("high-score-start").textContent = h;
+    $("mode-label-start").textContent = state.mode === "classic" ? "Classic" : "Advanced";
+  }
+
+  function setSoundLabel() {
+    var label = (state.muted ? "🔇 Sound off" : "🔊 Sound on");
+    $("sound-toggle-start").textContent = label;
+    $("sound-toggle-over").textContent = label;
+  }
+  function toggleMute() {
+    state.muted = !state.muted;
+    localStorage.setItem("lwa_muted", state.muted ? "1" : "0");
+    setSoundLabel();
+    if (!state.muted) { ensureAudio(); playSelect(); }
+  }
+  $("sound-toggle-start").addEventListener("click", toggleMute);
+  $("sound-toggle-over").addEventListener("click", toggleMute);
+  setSoundLabel();
+
+  /* mode select */
+  function setMode(mode) {
+    state.mode = mode;
+    $("mode-classic").setAttribute("aria-pressed", String(mode === "classic"));
+    $("mode-advanced").setAttribute("aria-pressed", String(mode === "advanced"));
+    refreshHighDisplays();
+  }
+  $("mode-classic").addEventListener("click", function () { setMode("classic"); });
+  $("mode-advanced").addEventListener("click", function () { setMode("advanced"); });
+  refreshHighDisplays();
+
+  /* ---------------- game flow ---------------- */
+  function startGame() {
+    ensureAudio();
+    playStart();
+    state.score = 0;
+    state.combo = 0;
+    state.bestCombo = 0;
+    state.lives = 3;
+    state.roundsWon = 0;
+    state.totalRounds = 0;
+    state.correctCount = 0;
+    state.fastestMs = Infinity;
+    updateHud();
+    showScreen(gameScreen);
+    nextRound();
+  }
+  $("start-btn").addEventListener("click", startGame);
+  $("restart-btn").addEventListener("click", startGame);
+
+  function updateHud() {
+    $("play-score").querySelector(".v").textContent = state.score;
+    var streakEl = $("play-streak");
+    streakEl.classList.toggle("hidden", state.combo < 2);
+    streakEl.querySelector(".v").textContent = state.combo;
+    $("play-lives").querySelector(".v").textContent = "❤".repeat(state.lives) + "♡".repeat(3 - state.lives);
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function currentDuration() {
+    return Math.max(1200, 2600 - state.roundsWon * 40);
+  }
+
+  /* Difficulty pool unlocks with skill (rounds_won), layered on top of the
+     continuous timer ramp above — see PRD §8. */
+  function unlockedTiers() {
+    var tiers = ["easy"];
+    if (state.roundsWon >= 3) tiers.push("medium");
+    if (state.roundsWon >= 8) tiers.push("hard");
+    if (state.roundsWon >= 15) tiers.push("expert");
+    return tiers;
+  }
+  function eligibleAnimals() {
+    var tiers = unlockedTiers();
+    return ANIMALS.filter(function (a) { return tiers.indexOf(a.difficulty) !== -1; });
+  }
+  function eligibleBonusAnimals() {
+    var tiers = unlockedTiers();
+    return BONUS_ANIMALS.filter(function (a) { return tiers.indexOf(a.difficulty) !== -1; });
+  }
+
+  var currentRound = null; // { kind: 'classic'|'advanced', ... }
+
+  function buildClassicRound() {
+    var pool = eligibleAnimals();
+    var category = pick(HABITAT_KEYS);
+    var inCategory = pool.filter(function (a) { return a.h[0] === category; });
+    if (!inCategory.length) { pool = ANIMALS; inCategory = pool.filter(function (a) { return a.h[0] === category; }); }
+    var correct = pick(inCategory);
+    var others = shuffle(pool.filter(function (a) { return a.h[0] !== category; }));
+    var choices = shuffle([correct, others[0], others[1]]);
+    return { kind: "classic", category: category, correct: correct, choices: choices, isBonus: false };
+  }
+
+  function buildAdvancedRound() {
+    var bonusPool = eligibleBonusAnimals();
+    var useBonus = bonusPool.length > 0 && Math.random() < 0.22;
+    var animal = useBonus ? pick(bonusPool) : pick(eligibleAnimals());
+    return { kind: "advanced", animal: animal, required: animal.h.slice(), isBonus: animal.h.length > 1 };
+  }
+
+  function renderStage(round) {
+    var emojiEl = $("prompt-emoji"), wordEl = $("prompt-word");
+    var bonusTag = $("bonus-tag");
+    if (round.kind === "classic") {
+      var info = HABITAT_INFO[round.category];
+      emojiEl.textContent = info.emoji;
+      wordEl.textContent = info.label.toUpperCase();
+      ringFill.style.stroke = "var(--" + round.category + ")";
+      bonusTag.classList.add("hidden");
+    } else {
+      emojiEl.textContent = round.animal.emoji;
+      wordEl.textContent = round.animal.name.toUpperCase();
+      ringFill.style.stroke = "var(--gold)";
+      bonusTag.classList.toggle("hidden", !round.isBonus);
+      bonusTag.textContent = round.required && round.required.length > 2 ? "★ all 3 habitats" : "★ 2 habitats";
+    }
+  }
+
+  function renderAnswers(round) {
+    var wrap = $("answers");
+    wrap.innerHTML = "";
+    if (round.kind === "classic") {
+      round.choices.forEach(function (animal, i) {
+        var btn = document.createElement("button");
+        btn.className = "ans-btn";
+        btn.innerHTML = '<span class="key">' + (i + 1) + '</span><span class="ic">' + animal.emoji + '</span><span class="lbl">' + animal.name + '</span>';
+        btn.addEventListener("click", function () { handleClassicChoice(animal, btn); });
+        wrap.appendChild(btn);
+      });
+    } else {
+      HABITAT_KEYS.forEach(function (hk, i) {
+        var info = HABITAT_INFO[hk];
+        var btn = document.createElement("button");
+        btn.className = "ans-btn " + info.tone;
+        btn.dataset.habitat = hk;
+        btn.innerHTML = '<span class="key">' + (i + 1) + '</span><span class="ic">' + info.emoji + '</span><span class="lbl">' + info.label + '</span>';
+        btn.addEventListener("click", function () { handleAdvancedChoice(hk, btn); });
+        wrap.appendChild(btn);
+      });
+    }
+  }
+
+  function nextRound() {
+    currentRound = state.mode === "classic" ? buildClassicRound() : buildAdvancedRound();
+    state.selectedSet = new Set();
+    state.requiredSet = new Set(currentRound.kind === "classic" ? [] : currentRound.required);
+    state.roundActive = true;
+    state.roundDuration = currentDuration();
+    state.roundEndAt = performance.now() + state.roundDuration;
+    state.tickPlayedAt = -1;
+    renderStage(currentRound);
+    renderAnswers(currentRound);
+    flashLayer.classList.remove("show-good", "show-bad");
+    characterEl.classList.remove("jump", "lie", "climb", "stumble");
+    startRing();
+  }
+
+  function startRing() {
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    function frame(now) {
+      if (!state.roundActive) return;
+      var remaining = state.roundEndAt - now;
+      var frac = Math.max(0, Math.min(1, remaining / state.roundDuration));
+      ringFill.style.strokeDashoffset = String(ringCircumference * (1 - frac));
+
+      var remainingSec = Math.ceil(remaining / 1000);
+      if (remaining <= 1000 && remaining > 0 && remainingSec !== state.tickPlayedAt) {
+        state.tickPlayedAt = remainingSec;
+        playTick();
+      }
+      if (remaining <= 0) {
+        onTimeout();
+        return;
+      }
+      state.rafId = requestAnimationFrame(frame);
+    }
+    state.rafId = requestAnimationFrame(frame);
+  }
+
+  function stopRing() {
+    state.roundActive = false;
+    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+  }
+
+  /* Pause the round timer when the tab is backgrounded instead of silently
+     burning through it — PRD §5 edge case / §19 non-functional gap. */
+  var pausedRemaining = null;
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      if (state.roundActive) {
+        pausedRemaining = Math.max(0, state.roundEndAt - performance.now());
+        state.roundActive = false;
+        if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+      }
+    } else if (pausedRemaining !== null) {
+      state.roundEndAt = performance.now() + pausedRemaining;
+      pausedRemaining = null;
+      state.roundActive = true;
+      state.tickPlayedAt = -1;
+      startRing();
+    }
+  });
+
+  function pointsForRound(bonus, remaining) {
+    var frac = remaining / state.roundDuration;
+    var base = Math.round(100 + 400 * frac);
+    var comboBonus = Math.min(state.combo, 10) * 15;
+    var total = base + comboBonus + (bonus ? 75 : 0);
+    return total;
+  }
+
+  function showPopup(text, habitat) {
+    popupPts.textContent = text;
+    popupPts.style.color = habitat ? "var(--" + habitat + "-fg)" : "var(--danger)";
+    popupPts.classList.remove("fly");
+    void popupPts.offsetWidth;
+    popupPts.classList.add("fly");
+  }
+
+  function flashGood(habitat) {
+    flashLayer.style.setProperty("--flash-good", habitat ? "var(--" + habitat + ")" : "var(--gold)");
+    flashLayer.classList.remove("show-bad");
+    flashLayer.classList.add("show-good");
+    setTimeout(function () { flashLayer.classList.remove("show-good"); }, 260);
+  }
+  function flashBad() {
+    flashLayer.classList.remove("show-good");
+    flashLayer.classList.add("show-bad");
+    stageWrap.classList.remove("shake"); void stageWrap.offsetWidth; stageWrap.classList.add("shake");
+    setTimeout(function () { flashLayer.classList.remove("show-bad"); }, 260);
+  }
+
+  function roundSuccess(bonus, habitat) {
+    var remaining = Math.max(0, state.roundEndAt - performance.now());
+    var elapsed = state.roundDuration - remaining;
+    stopRing();
+    var pts = pointsForRound(bonus, remaining);
+    state.score += pts;
+    state.combo += 1;
+    state.bestCombo = Math.max(state.bestCombo, state.combo);
+    state.roundsWon += 1;
+    state.totalRounds += 1;
+    state.correctCount += 1;
+    if (elapsed < state.fastestMs) state.fastestMs = elapsed;
+    updateHud();
+    showPopup("+" + pts, habitat);
+    flashGood(habitat);
+    playCorrect();
+    if (state.score > getHigh(state.mode)) setHigh(state.mode, state.score);
+    refreshHighDisplays();
+    setTimeout(nextRound, 800);
+  }
+
+  function roundFail() {
+    stopRing();
+    state.combo = 0;
+    state.lives -= 1;
+    state.totalRounds += 1;
+    updateHud();
+    flashBad();
+    playCharacterAction(null, false);
+    playWrong();
+    playLifeLost();
+    if (state.lives <= 0) {
+      setTimeout(gameOver, 600);
+    } else {
+      setTimeout(nextRound, 700);
+    }
+  }
+
+  function onTimeout() {
+    if (!state.roundActive) return;
+    roundFail();
+  }
+
+  function handleClassicChoice(animal, btnEl) {
+    if (!state.roundActive) return;
+    disableAnswers();
+    if (animal.name === currentRound.correct.name) {
+      btnEl.classList.add("correct");
+      playCharacterAction(currentRound.category, true);
+      roundSuccess(false, currentRound.category);
+    } else {
+      btnEl.classList.add("wrong");
+      var correctBtn = Array.prototype.find.call($("answers").children, function (b) {
+        return b.textContent.indexOf(currentRound.correct.name) !== -1;
+      });
+      if (correctBtn) correctBtn.classList.add("correct");
+      roundFail();
+    }
+  }
+
+  function disableAnswers() {
+    Array.prototype.forEach.call($("answers").children, function (b) { b.disabled = true; });
+  }
+
+  function handleAdvancedChoice(habitat, btnEl) {
+    if (!state.roundActive) return;
+    var required = state.requiredSet;
+    if (!required.has(habitat)) {
+      btnEl.classList.add("wrong");
+      disableAnswers();
+      roundFail();
+      return;
+    }
+    if (state.selectedSet.has(habitat)) return;
+    state.selectedSet.add(habitat);
+    btnEl.classList.add("selected");
+    btnEl.disabled = true;
+    playSelect();
+    playCharacterAction(habitat, true);
+    if (state.selectedSet.size === required.size) {
+      disableAnswers();
+      Array.prototype.forEach.call($("answers").children, function (b) {
+        if (required.has(b.dataset.habitat)) b.classList.add("correct");
+      });
+      roundSuccess(currentRound.isBonus, habitat);
+    }
+  }
+
+  function gameOver() {
+    stopRing();
+    playGameOver();
+    var high = getHigh(state.mode);
+    var isNew = state.score >= high && state.score > 0;
+    var accuracy = state.totalRounds ? Math.round((state.correctCount / state.totalRounds) * 100) : 0;
+    var fastest = state.fastestMs === Infinity ? "–" : Math.round(state.fastestMs) + "ms";
+    $("final-score").textContent = state.score;
+    $("new-high-badge").classList.toggle("hidden", !isNew);
+    $("stat-accuracy").textContent = accuracy + "%";
+    $("stat-fastest").textContent = fastest;
+    $("stat-best-streak").textContent = state.bestCombo;
+    $("stat-best").textContent = high;
+    showScreen(overScreen);
+  }
+
+  /* ---------------- keyboard ---------------- */
+  document.addEventListener("keydown", function (e) {
+    if (e.repeat) return;
+    var key = e.key.toLowerCase();
+    if (key === "m") { toggleMute(); return; }
+    if (startScreen.classList.contains("active") && (key === "enter" || key === " ")) {
+      e.preventDefault(); startGame(); return;
+    }
+    if (overScreen.classList.contains("active") && (key === "enter" || key === " ")) {
+      e.preventDefault(); startGame(); return;
+    }
+    if (gameScreen.classList.contains("active") && state.roundActive) {
+      var idx = { "1": 0, "2": 1, "3": 2 }[key];
+      if (idx !== undefined) {
+        var btn = $("answers").children[idx];
+        if (btn && !btn.disabled) btn.click();
+      }
+    }
+  });
+
+  refreshHighDisplays();
+})();
+</script>
+</body>
+</html>
