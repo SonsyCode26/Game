@@ -4,11 +4,12 @@ A fast-paced animal-sorting game for kids. An animal appears in the centre ring 
 
 Single self-contained HTML file. No build step, no dependencies, no network calls.
 
-**Repository:** https://github.com/SonsyCode26/Game
+**Play now:** https://sonsycode26.github.io/Game/
+**Source:** https://github.com/SonsyCode26/Game
 
 ## Play
 
-Clone the repo, or download `land-water-air-game.html` on its own, and open it in any modern browser. That's it.
+Open the link above, or run it locally — clone the repo, or download `index.html` on its own, and open it in any modern browser. That's it.
 
 ```bash
 git clone https://github.com/SonsyCode26/Game.git
